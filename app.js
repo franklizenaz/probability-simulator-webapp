@@ -12,6 +12,16 @@ const EXPERIMENTOS = {
   },
 };
 
+// Colores disponibles en la urna (nombre → color de relleno)
+const COLORES = {
+  Rojo: "#e5484d",
+  Azul: "#3e63dd",
+  Verde: "#30a46c",
+  Amarillo: "#f5b93f",
+  Naranja: "#e8813a",
+  Morado: "#8e4ec6",
+};
+
 // Elementos de la página
 const formulario = document.getElementById("formulario");
 const campoExperimento = document.getElementById("experimento");
@@ -20,12 +30,21 @@ const mensajeError = document.getElementById("error");
 const seccionResultados = document.getElementById("resultados");
 const elementoTotal = document.getElementById("total");
 const contenedorResultados = document.getElementById("filas");
-const figuraMoneda = document.getElementById("figura-moneda");
-const figuraDado = document.getElementById("figura-dado");
+const seccionUrna = document.getElementById("urna");
+const figuras = document.querySelectorAll(".figura");
 
 // Formatea un número como porcentaje con máximo dos decimales
 function porcentaje(valor) {
   return (valor * 100).toFixed(2) + "%";
+}
+
+// Devuelve la probabilidad teórica de un resultado:
+// un número si todos los resultados son equiprobables, o el mapa si cada uno tiene la suya
+function probabilidadTeorica(experimento, resultado) {
+  if (typeof experimento.teorica === "number") {
+    return experimento.teorica;
+  }
+  return experimento.teorica[resultado];
 }
 
 function mostrarError(texto) {
@@ -71,10 +90,21 @@ function iconoDado(numero) {
   </svg>`;
 }
 
+// Icono de una bola del color indicado
+function iconoPelota(color) {
+  return `<svg class="icono" viewBox="0 0 48 48" aria-hidden="true">
+    <circle cx="24" cy="24" r="18" class="bola" style="fill: ${COLORES[color]}"></circle>
+    <ellipse cx="18" cy="17" rx="5" ry="3.5" class="brillo" transform="rotate(-30 18 17)"></ellipse>
+  </svg>`;
+}
+
 // Devuelve el icono adecuado para cada resultado
 function iconoResultado(resultado) {
   if (resultado === "Cara" || resultado === "Cruz") {
     return iconoMoneda(resultado);
+  }
+  if (COLORES[resultado]) {
+    return iconoPelota(resultado);
   }
   return iconoDado(Number(resultado));
 }
@@ -97,12 +127,12 @@ function mostrarResultados(experimento, conteos, total) {
         <p class="resultado-cantidad">${cantidad} <span>${veces}</span></p>
       </div>
       <div class="resultado-porcentajes">
-        <span>Teórica: <strong>${porcentaje(experimento.teorica)}</strong></span>
+        <span>Teórica: <strong>${porcentaje(probabilidadTeorica(experimento, resultado))}</strong></span>
         <span>Experimental: <strong>${porcentaje(experimental)}</strong></span>
       </div>
       <div class="barra">
         <div class="barra-relleno" style="--ancho: ${porcentaje(experimental)}"></div>
-        <span class="marco-teorica" style="--pos: ${porcentaje(experimento.teorica)}"></span>
+        <span class="marco-teorica" style="--pos: ${porcentaje(probabilidadTeorica(experimento, resultado))}"></span>
       </div>
     `;
 
@@ -113,8 +143,61 @@ function mostrarResultados(experimento, conteos, total) {
   seccionResultados.hidden = false;
 }
 
+// Saca una bola al azar de la urna (con reposición: cada ensayo es independiente)
+function extraerBola(conteos, total) {
+  let numero = Math.floor(Math.random() * total);
+
+  for (const color of Object.keys(conteos)) {
+    if (numero < conteos[color]) {
+      return color;
+    }
+    numero -= conteos[color];
+  }
+
+  return Object.keys(conteos)[0];
+}
+
+// Lee la composición de la urna del formulario y devuelve el experimento listo,
+// o un mensaje de error si la composición no es válida
+function prepararUrna() {
+  const campos = document.querySelectorAll("#urna input");
+  const conteos = {};
+  let total = 0;
+
+  for (const campo of campos) {
+    const cantidad = Number(campo.value);
+
+    if (campo.value.trim() === "" || !Number.isInteger(cantidad) || cantidad < 0) {
+      return { error: "La urna necesita números enteros mayores o iguales que 0." };
+    }
+
+    if (cantidad > 0) {
+      conteos[campo.dataset.color] = cantidad;
+      total += cantidad;
+    }
+  }
+
+  if (total === 0) {
+    return { error: "Añade al menos una bola a la urna." };
+  }
+
+  const resultados = Object.keys(conteos);
+  const teorica = {};
+
+  for (const color of resultados) {
+    teorica[color] = conteos[color] / total;
+  }
+
+  return {
+    experimento: {
+      resultados: resultados,
+      teorica: teorica,
+      generar: () => extraerBola(conteos, total),
+    },
+  };
+}
+
 function simular() {
-  const experimento = EXPERIMENTOS[campoExperimento.value];
   const numeroTexto = campoSimulaciones.value.trim();
   const numero = Number(numeroTexto);
 
@@ -122,6 +205,18 @@ function simular() {
   if (numeroTexto === "" || !Number.isInteger(numero) || numero <= 0) {
     mostrarError("Introduce un número entero mayor que 0.");
     return;
+  }
+
+  // La urna depende de los campos del formulario; el resto son fijos
+  let experimento = EXPERIMENTOS[campoExperimento.value];
+
+  if (campoExperimento.value === "urna") {
+    const urna = prepararUrna();
+    if (urna.error) {
+      mostrarError(urna.error);
+      return;
+    }
+    experimento = urna.experimento;
   }
 
   const conteos = {};
@@ -143,8 +238,13 @@ formulario.addEventListener("submit", (evento) => {
 });
 
 // Muestra en la cabecera la ilustración del experimento elegido
+// y la composición de la urna solo cuando toca
 campoExperimento.addEventListener("change", () => {
-  const esMoneda = campoExperimento.value === "moneda";
-  figuraMoneda.classList.toggle("activa", esMoneda);
-  figuraDado.classList.toggle("activa", !esMoneda);
+  const valor = campoExperimento.value;
+
+  figuras.forEach((figura) => {
+    figura.classList.toggle("activa", figura.id === "figura-" + valor);
+  });
+
+  seccionUrna.hidden = valor !== "urna";
 });

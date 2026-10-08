@@ -41,6 +41,18 @@
             </svg>
           </div>
         </div>
+
+        <div class="figura figura-urna" id="figura-urna">
+          <div class="flota">
+            <svg viewBox="0 0 120 120" class="ilustracion" role="img" aria-label="Urna con bolas de colores">
+              <rect x="30" y="38" width="60" height="64" rx="18" class="urna-cuerpo"></rect>
+              <rect x="24" y="26" width="72" height="14" rx="7" class="urna-tapa"></rect>
+              <circle cx="47" cy="78" r="10" class="bola-urna bola-urna-roja"></circle>
+              <circle cx="68" cy="84" r="10" class="bola-urna bola-urna-azul"></circle>
+              <circle cx="76" cy="64" r="9" class="bola-urna bola-urna-amarilla"></circle>
+            </svg>
+          </div>
+        </div>
       </div>
 
       <h1>Simulador de Probabilidades</h1>
@@ -53,6 +65,7 @@
         <select id="experimento">
           <option value="moneda">Moneda</option>
           <option value="dado">Dado de 6 caras</option>
+          <option value="urna">Sacar bolas de una urna</option>
         </select>
       </div>
 
@@ -60,6 +73,36 @@
         <label for="simulaciones">Número de simulaciones</label>
         <input type="number" id="simulaciones" value="1000" inputmode="numeric">
       </div>
+
+      <fieldset class="urna" id="urna" hidden>
+        <legend>Composición de la urna</legend>
+        <div class="urna-filas">
+          <div class="urna-fila">
+            <span class="muestrario"><span class="bola-muestra bola-rojo"></span> Rojo</span>
+            <input type="number" data-color="Rojo" value="5" inputmode="numeric" aria-label="Número de bolas rojas">
+          </div>
+          <div class="urna-fila">
+            <span class="muestrario"><span class="bola-muestra bola-azul"></span> Azul</span>
+            <input type="number" data-color="Azul" value="3" inputmode="numeric" aria-label="Número de bolas azules">
+          </div>
+          <div class="urna-fila">
+            <span class="muestrario"><span class="bola-muestra bola-verde"></span> Verde</span>
+            <input type="number" data-color="Verde" value="0" inputmode="numeric" aria-label="Número de bolas verdes">
+          </div>
+          <div class="urna-fila">
+            <span class="muestrario"><span class="bola-muestra bola-amarillo"></span> Amarillo</span>
+            <input type="number" data-color="Amarillo" value="0" inputmode="numeric" aria-label="Número de bolas amarillas">
+          </div>
+          <div class="urna-fila">
+            <span class="muestrario"><span class="bola-muestra bola-naranja"></span> Naranja</span>
+            <input type="number" data-color="Naranja" value="0" inputmode="numeric" aria-label="Número de bolas naranjas">
+          </div>
+          <div class="urna-fila">
+            <span class="muestrario"><span class="bola-muestra bola-morado"></span> Morado</span>
+            <input type="number" data-color="Morado" value="0" inputmode="numeric" aria-label="Número de bolas moradas">
+          </div>
+        </div>
+      </fieldset>
 
       <button type="submit" id="boton-simular">Simular</button>
     </form>
